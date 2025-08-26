@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IMAGE TO TEXT</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        font-weight: 700;
+      }
+
+      .header p {
+        opacity: 0.9;
+        font-size: 1.1rem;
+      }
+
+      .main-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        padding: 30px;
+        min-height: 600px;
+      }
+
+      .upload-section {
+        position: relative;
+      }
+
+      .upload-area {
+        border: 3px dashed #d1d5db;
+        border-radius: 15px;
+        padding: 60px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: #f9fafb;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .upload-area:hover {
+        border-color: #4f46e5;
+        background: #f0f4ff;
+      }
+
+      .upload-area.dragover {
+        border-color: #4f46e5;
+        background: #e0e7ff;
+        transform: scale(1.02);
+      }
+
+      .upload-icon {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 20px;
+        opacity: 0.5;
+      }
+
+      .upload-text {
+        font-size: 1.2rem;
+        color: #6b7280;
+        margin-bottom: 10px;
+      }
+
+      .upload-subtext {
+        color: #9ca3af;
+        font-size: 0.9rem;
+      }
+
+      #file-input {
+        display: none;
+      }
+
+      .image-canvas-container {
+        position: relative;
+        margin-top: 20px;
+        display: none;
+      }
+
+      #image-canvas {
+        max-width: 100%;
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        cursor: crosshair;
+      }
+
+      .selection-box {
+        position: absolute;
+        border: 2px solid #4f46e5;
+        background: rgba(79, 70, 229, 0.1);
+        pointer-events: none;
+        border-radius: 4px;
+      }
+
+      .results-section {
+        background: #f9fafb;
+        border-radius: 15px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .results-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .results-title {
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: #1f2937;
+      }
+
+      .clear-btn {
+        background: #ef4444;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background 0.2s;
+      }
+
+      .clear-btn:hover {
+        background: #dc2626;
+      }
+
+      .extracted-items {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      .extracted-item {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 15px;
+        position: relative;
+        animation: fadeIn 0.3s ease;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .item-label {
+        font-size: 0.8rem;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 5px;
+      }
+
+      .item-text {
+        font-size: 1rem;
+        color: #1f2937;
+        line-height: 1.4;
+        background: #f3f4f6;
+        padding: 8px 12px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        white-space: pre-wrap;
+      }
+
+      .item-coords {
+        font-size: 0.75rem;
+        color: #9ca3af;
+      }
+
+      .delete-item {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #ef4444;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .delete-item:hover {
+        background: #dc2626;
+      }
+
+      .export-section {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #e5e7eb;
+      }
+
+      .export-btn {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 600;
+        width: 100%;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+
+      .export-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+      }
+
+      .export-btn:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .instructions {
+        background: #fffbeb;
+        border: 1px solid #fbbf24;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+        color: #92400e;
+      }
+
+      .instructions h3 {
+        margin-bottom: 8px;
+        color: #78350f;
+      }
+
+      .loading {
+        display: none;
+        text-align: center;
+        color: #6b7280;
+      }
+
+      .spinner {
+        border: 3px solid #f3f4f6;
+        border-top: 3px solid #4f46e5;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 10px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (max-width: 768px) {
+        .main-content {
+          grid-template-columns: 1fr;
+          gap: 20px;
+          padding: 20px;
+        }
+
+        .header h1 {
+          font-size: 2rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🏠 IMAGE TO TEXT</h1>
+        <p>Upload gambar dan pilih area untuk ekstraksi teks</p>
+      </div>
+
+      <div class="main-content">
+        <div class="upload-section">
+          <div class="instructions">
+            <h3>📋 Cara Penggunaan:</h3>
+            <p>
+              1. Upload gambar<br />
+              2. Klik dan drag untuk memilih area teks<br />
+              3. Teks akan diekstrak secara otomatis<br />
+              4. Export hasil ke JSON
+            </p>
+          </div>
+
+          <div class="upload-area" id="upload-area">
+            <svg class="upload-icon" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fill-rule="evenodd"
+                d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+                clip-rule="evenodd"
+              ></path>
+            </svg>
+            <div class="upload-text">Klik untuk upload gambar KK</div>
+            <div class="upload-subtext">atau drag & drop file di sini</div>
+            <div class="upload-subtext">Format: JPG, PNG, PDF (max 10MB)</div>
+          </div>
+
+          <input type="file" id="file-input" accept=".jpg,.jpeg,.png,.pdf" />
+
+          <div class="image-canvas-container" id="canvas-container">
+            <canvas id="image-canvas"></canvas>
+            <div class="loading" id="loading">
+              <div class="spinner"></div>
+              <p>Memproses gambar...</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="results-section">
+          <div class="results-header">
+            <h2 class="results-title">📝 Hasil Ekstraksi</h2>
+            <button class="clear-btn" id="clear-results" style="display: none">
+              Hapus Semua
+            </button>
+          </div>
+
+          <div class="extracted-items" id="extracted-items">
+            <div style="text-align: center; color: #9ca3af; padding: 60px 20px">
+              <svg
+                width="48"
+                height="48"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+                style="margin: 0 auto 15px; opacity: 0.5"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+                  clip-rule="evenodd"
+                ></path>
+              </svg>
+              <p>Belum ada teks yang diekstrak</p>
+              <p style="font-size: 0.9rem; margin-top: 5px">
+                Pilih area pada gambar untuk memulai
+              </p>
+            </div>
+          </div>
+
+          <div class="export-section">
+            <button class="export-btn" id="export-btn" disabled>
+              📥 Export ke JSON
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/2.1.5/tesseract.min.js"></script>
+    <script>
+      class KKOCRApp {
+        constructor() {
+          this.canvas = document.getElementById("image-canvas");
+          this.ctx = this.canvas.getContext("2d");
+          this.currentImage = null;
+          this.isSelecting = false;
+          this.startPos = { x: 0, y: 0 };
+          this.endPos = { x: 0, y: 0 };
+          this.extractedData = [];
+          this.selectionBox = null;
+          this.scale = 1;
+
+          this.initializeEventListeners();
+        }
+
+        initializeEventListeners() {
+          // File upload
+          document
+            .getElementById("upload-area")
+            .addEventListener("click", () => {
+              document.getElementById("file-input").click();
+            });
+
+          document
+            .getElementById("file-input")
+            .addEventListener("change", (e) => {
+              this.handleFileUpload(e.target.files[0]);
+            });
+
+          // Drag and drop
+          const uploadArea = document.getElementById("upload-area");
+          uploadArea.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            uploadArea.classList.add("dragover");
+          });
+
+          uploadArea.addEventListener("dragleave", () => {
+            uploadArea.classList.remove("dragover");
+          });
+
+          uploadArea.addEventListener("drop", (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove("dragover");
+            this.handleFileUpload(e.dataTransfer.files[0]);
+          });
+
+          // Canvas selection
+          this.canvas.addEventListener(
+            "mousedown",
+            this.startSelection.bind(this)
+          );
+          this.canvas.addEventListener(
+            "mousemove",
+            this.updateSelection.bind(this)
+          );
+          this.canvas.addEventListener("mouseup", this.endSelection.bind(this));
+
+          // Buttons
+          document
+            .getElementById("clear-results")
+            .addEventListener("click", this.clearResults.bind(this));
+          document
+            .getElementById("export-btn")
+            .addEventListener("click", this.exportData.bind(this));
+        }
+
+        handleFileUpload(file) {
+          if (!file) return;
+
+          if (file.size > 10 * 1024 * 1024) {
+            alert("File terlalu besar! Maksimal 10MB");
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            this.loadImage(e.target.result);
+          };
+          reader.readAsDataURL(file);
+        }
+
+        loadImage(src) {
+          const img = new Image();
+          img.onload = () => {
+            this.currentImage = img;
+            this.displayImage();
+            document.getElementById("canvas-container").style.display = "block";
+          };
+          img.src = src;
+        }
+
+        displayImage() {
+          if (!this.currentImage) return;
+
+          const maxWidth = 500;
+          const maxHeight = 600;
+
+          let { width, height } = this.currentImage;
+          this.scale = Math.min(maxWidth / width, maxHeight / height, 1);
+
+          this.canvas.width = width * this.scale;
+          this.canvas.height = height * this.scale;
+
+          this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+          this.ctx.drawImage(
+            this.currentImage,
+            0,
+            0,
+            this.canvas.width,
+            this.canvas.height
+          );
+        }
+
+        startSelection(e) {
+          if (!this.currentImage) return;
+
+          this.isSelecting = true;
+          const rect = this.canvas.getBoundingClientRect();
+          this.startPos = {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
+          };
+
+          this.removeSelectionBox();
+        }
+
+        updateSelection(e) {
+          if (!this.isSelecting) return;
+
+          const rect = this.canvas.getBoundingClientRect();
+          this.endPos = {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
+          };
+
+          this.drawSelectionBox();
+        }
+
+        drawSelectionBox() {
+          this.removeSelectionBox();
+
+          const x = Math.min(this.startPos.x, this.endPos.x);
+          const y = Math.min(this.startPos.y, this.endPos.y);
+          const width = Math.abs(this.endPos.x - this.startPos.x);
+          const height = Math.abs(this.endPos.y - this.startPos.y);
+
+          this.selectionBox = document.createElement("div");
+          this.selectionBox.className = "selection-box";
+          this.selectionBox.style.left = x + "px";
+          this.selectionBox.style.top = y + "px";
+          this.selectionBox.style.width = width + "px";
+          this.selectionBox.style.height = height + "px";
+
+          document
+            .getElementById("canvas-container")
+            .appendChild(this.selectionBox);
+        }
+
+        removeSelectionBox() {
+          if (this.selectionBox) {
+            this.selectionBox.remove();
+            this.selectionBox = null;
+          }
+        }
+
+        async endSelection(e) {
+          if (!this.isSelecting) return;
+
+          this.isSelecting = false;
+
+          const width = Math.abs(this.endPos.x - this.startPos.x);
+          const height = Math.abs(this.endPos.y - this.startPos.y);
+
+          if (width < 10 || height < 10) {
+            this.removeSelectionBox();
+            return;
+          }
+
+          await this.extractTextFromSelection();
+          this.removeSelectionBox();
+        }
+
+        async extractTextFromSelection() {
+          const x = Math.min(this.startPos.x, this.endPos.x);
+          const y = Math.min(this.startPos.y, this.endPos.y);
+          const width = Math.abs(this.endPos.x - this.startPos.x);
+          const height = Math.abs(this.endPos.y - this.startPos.y);
+
+          // Create temporary canvas for cropped area
+          const tempCanvas = document.createElement("canvas");
+          const tempCtx = tempCanvas.getContext("2d");
+
+          tempCanvas.width = width / this.scale;
+          tempCanvas.height = height / this.scale;
+
+          tempCtx.drawImage(
+            this.currentImage,
+            x / this.scale,
+            y / this.scale,
+            width / this.scale,
+            height / this.scale,
+            0,
+            0,
+            tempCanvas.width,
+            tempCanvas.height
+          );
+
+          this.showLoading(true);
+
+          try {
+            const {
+              data: { text },
+            } = await Tesseract.recognize(tempCanvas, "ind+eng", {
+              logger: (m) => {
+                if (m.status === "recognizing text") {
+                  console.log(`Progress: ${Math.round(m.progress * 100)}%`);
+                }
+              },
+            });
+
+            const extractedItem = {
+              id: Date.now(),
+              text: text.trim(),
+              coordinates: {
+                x: Math.round(x / this.scale),
+                y: Math.round(y / this.scale),
+                width: Math.round(width / this.scale),
+                height: Math.round(height / this.scale),
+              },
+              timestamp: new Date().toLocaleString("id-ID"),
+            };
+
+            if (extractedItem.text) {
+              this.extractedData.push(extractedItem);
+              this.updateResultsDisplay();
+            }
+          } catch (error) {
+            console.error("OCR Error:", error);
+            alert("Gagal mengekstrak teks. Silakan coba lagi.");
+          } finally {
+            this.showLoading(false);
+          }
+        }
+
+        showLoading(show) {
+          document.getElementById("loading").style.display = show
+            ? "block"
+            : "none";
+        }
+
+        updateResultsDisplay() {
+          const container = document.getElementById("extracted-items");
+
+          if (this.extractedData.length === 0) {
+            container.innerHTML = `
+                        <div style="text-align: center; color: #9ca3af; padding: 60px 20px;">
+                            <p>Belum ada teks yang diekstrak</p>
+                        </div>
+                    `;
+            document.getElementById("clear-results").style.display = "none";
+            document.getElementById("export-btn").disabled = true;
+            return;
+          }
+
+          container.innerHTML = this.extractedData
+            .map(
+              (item) => `
+                    <div class="extracted-item">
+                        <button class="delete-item" onclick="app.deleteItem(${item.id})">×</button>
+                        <div class="item-label">Ekstrak #${item.id}</div>
+                        <div class="item-text">${item.text}</div>
+                        <div class="item-coords">
+                            Posisi: (${item.coordinates.x}, ${item.coordinates.y}) | 
+                            Ukuran: ${item.coordinates.width}×${item.coordinates.height} | 
+                            Waktu: ${item.timestamp}
+                        </div>
+                    </div>
+                `
+            )
+            .join("");
+
+          document.getElementById("clear-results").style.display = "block";
+          document.getElementById("export-btn").disabled = false;
+        }
+
+        deleteItem(id) {
+          this.extractedData = this.extractedData.filter(
+            (item) => item.id !== id
+          );
+          this.updateResultsDisplay();
+        }
+
+        clearResults() {
+          if (confirm("Hapus semua hasil ekstraksi?")) {
+            this.extractedData = [];
+            this.updateResultsDisplay();
+          }
+        }
+
+        exportData() {
+          if (this.extractedData.length === 0) return;
+
+          const exportData = {
+            timestamp: new Date().toISOString(),
+            total_extractions: this.extractedData.length,
+            data: this.extractedData,
+          };
+
+          const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+            type: "application/json",
+          });
+
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `kk_ocr_results_${new Date()
+            .toISOString()
+            .slice(0, 10)}.json`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      }
+
+      // Initialize app
+      const app = new KKOCRApp();
+    </script>
+  </body>
+</html>
